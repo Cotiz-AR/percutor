@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PERCUTOR — Blancos de acero · Rosario</title>
+<meta name="description" content="Percutor fabrica blancos reactivos de acero para tiro con pistola. Flipping Jack FPJ-R1: un caminador que vuelca y gira con cada impacto. Hecho en Rosario, Santa Fe.">
+<meta name="theme-color" content="#191b1d">
+<meta property="og:title" content="PERCUTOR — Blancos de acero">
+<meta property="og:description" content="Flipping Jack FPJ-R1: blanco reactivo de acero para pistola. Hecho en Rosario.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_AR">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#b12a26;
+  --graphite:#191b1d;
+  --graphite-2:#222527;
+  --paper:#e9e6df;
+  --paper-dim:#a9a69f;
+  --line:rgba(233,230,223,.16);
+  --title:'Archivo',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--graphite);color:var(--paper);font-family:var(--title);font-weight:700;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.mono{font-family:var(--mono);font-weight:500}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:600}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:10;background:rgba(25,27,29,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:18px;letter-spacing:.12em}
+.brand svg{width:26px;height:26px}
+nav ul{display:flex;gap:26px;list-style:none;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav ul a{text-decoration:none;color:var(--paper-dim);font-weight:500}
+nav ul a:hover{color:var(--paper)}
+@media(max-width:640px){nav ul li:not(:last-child){display:none}}
+
+/* HERO */
+.hero{padding:88px 0 72px;border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.hero h1{font-weight:900;font-size:clamp(56px,10vw,128px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase;margin:16px 0 24px}
+.hero h1 span{color:var(--red)}
+.hero p.lead{font-size:20px;max-width:34ch;color:var(--paper);font-weight:700}
+.hero p.sub{font-family:var(--mono);font-weight:400;font-size:14px;color:var(--paper-dim);max-width:46ch;margin-top:14px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.btn{display:inline-block;font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;padding:15px 22px;border:2px solid var(--red);cursor:pointer;background:none;color:var(--paper)}
+.btn.primary{background:var(--red)}
+.btn.primary:hover{background:#c8332e;border-color:#c8332e}
+.btn:not(.primary):hover{background:rgba(177,42,38,.15)}
+@media(max-width:860px){.hero .wrap{grid-template-columns:1fr}.hero{padding-top:56px}}
+
+/* DEMO */
+.demo{background:var(--graphite-2);border:1px solid var(--line);padding:20px}
+.demo svg{width:100%;height:auto;display:block}
+.demo .bar{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--paper-dim);text-transform:uppercase;gap:12px}
+.hit{font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--red);color:var(--paper);border:0;padding:10px 16px;cursor:pointer}
+.hit:hover{background:#c8332e}
+#jack{transform-box:fill-box;transform-origin:50% 62%;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+#jack.flip{transform:rotate(120deg)}
+@media(prefers-reduced-motion:reduce){#jack{transition:none}}
+
+/* SECTIONS */
+section{padding:84px 0;border-bottom:1px solid var(--line)}
+section.light{background:var(--paper);color:var(--graphite)}
+section.light .eyebrow{color:var(--red)}
+h2{font-weight:900;font-size:clamp(32px,5vw,56px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;margin:12px 0 20px}
+.intro{font-family:var(--mono);font-weight:400;font-size:15px;max-width:58ch;color:var(--paper-dim)}
+section.light .intro{color:#4a4a47}
+
+/* HOW */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:48px;border:1px solid var(--line)}
+.step{padding:28px;border-right:1px solid var(--line)}
+.step:last-child{border-right:0}
+.step .n{font-family:var(--mono);color:var(--red);font-weight:600;font-size:13px}
+.step h3{font-weight:800;font-size:22px;text-transform:uppercase;margin:10px 0 8px}
+.step p{font-family:var(--mono);font-weight:400;font-size:14px;color:var(--paper-dim)}
+@media(max-width:760px){.steps{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.step:last-child{border-bottom:0}}
+
+/* PRODUCT */
+.prod{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:40px;align-items:start}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:14px;font-weight:500}
+td{padding:13px 0;border-bottom:1px solid rgba(25,27,29,.18);vertical-align:top}
+td:first-child{color:#5a5a56;width:48%;text-transform:uppercase;font-size:12px;letter-spacing:.06em;padding-top:15px}
+td:last-child{font-weight:600}
+.price{background:var(--graphite);color:var(--paper);padding:32px}
+.price .eyebrow{color:var(--paper-dim)}
+.price .amt{font-weight:900;font-size:64px;line-height:1;margin:10px 0 6px;letter-spacing:-.02em}
+.price .amt small{font-size:22px;color:var(--paper-dim);font-weight:700;margin-right:4px}
+.price p{font-family:var(--mono);font-weight:400;font-size:13px;color:var(--paper-dim);margin-bottom:22px}
+.price ul{list-style:none;font-family:var(--mono);font-size:13px;font-weight:500;margin-bottom:26px}
+.price li{padding:9px 0;border-top:1px solid var(--line)}
+.price li::before{content:"■ ";color:var(--red);font-size:10px}
+@media(max-width:860px){.prod{grid-template-columns:1fr;gap:36px}}
+
+/* SAFETY */
+.safe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+.rule{background:var(--graphite-2);border:1px solid var(--line);border-top:3px solid var(--red);padding:22px}
+.rule .big{font-weight:900;font-size:40px;line-height:1}
+.rule .big small{font-size:18px;color:var(--paper-dim)}
+.rule h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);font-weight:600;margin-bottom:10px}
+.rule p{font-family:var(--mono);font-weight:400;font-size:13px;color:var(--paper-dim);margin-top:8px}
+.notice{margin-top:24px;padding:22px 24px;border:1px solid var(--red);background:rgba(177,42,38,.1);font-family:var(--mono);font-weight:400;font-size:14px}
+.notice strong{font-weight:600;color:var(--paper)}
+@media(max-width:860px){.safe-grid{grid-template-columns:1fr}}
+
+/* CONTACT */
+.contact .wrap{display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end}
+.contact h2{margin-bottom:12px}
+.ig{font-weight:900;font-size:clamp(28px,4.5vw,48px);letter-spacing:-.01em;text-decoration:none;color:var(--paper);border-bottom:4px solid var(--red)}
+@media(max-width:860px){.contact .wrap{grid-template-columns:1fr}}
+
+footer{padding:36px 0;font-family:var(--mono);font-weight:400;font-size:12px;color:var(--paper-dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Percutor">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#b12a26" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="#e9e6df"/></svg>
+      PERCUTOR
+    </a>
+    <ul>
+      <li><a href="#como">Cómo funciona</a></li>
+      <li><a href="#producto">Flipping Jack</a></li>
+      <li><a href="#seguridad">Seguridad</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Blancos de acero · Rosario, Santa Fe</div>
+      <h1>Perc<span>u</span>tor</h1>
+      <p class="lead">Un blanco que se da vuelta solo. Pegale, y te ofrece una cara nueva.</p>
+      <p class="sub">Flipping Jack FPJ-R1. Blanco reactivo de acero para pistola, cortado por láser, soldado y pintado en Rosario.</p>
+      <div class="cta">
+        <a class="btn primary" href="#producto">Ver el producto</a>
+        <a class="btn" href="https://instagram.com/percutor.ar" target="_blank" rel="noopener">@percutor.ar</a>
+      </div>
+    </div>
+
+    <div class="demo">
+      <svg viewBox="0 0 460 300" role="img" aria-label="Esquema del Flipping Jack">
+        <line x1="20" y1="252" x2="440" y2="252" stroke="#e9e6df" stroke-opacity=".35" stroke-width="2"/>
+        <g id="jack">
+          <g stroke="#b12a26" stroke-width="30" stroke-linecap="round">
+            <line x1="230" y1="148" x2="77" y2="236"/>
+            <line x1="230" y1="148" x2="383" y2="236"/>
+          </g>
+          <rect x="212" y="84" width="36" height="64" fill="#b12a26"/>
+          <circle cx="230" cy="148" r="30" fill="#b12a26"/>
+          <circle cx="77" cy="198" r="54" fill="#b12a26"/>
+          <circle cx="383" cy="198" r="54" fill="#b12a26"/>
+          <circle cx="77" cy="198" r="54" fill="none" stroke="#e9e6df" stroke-opacity=".5" stroke-width="2"/>
+          <circle cx="383" cy="198" r="54" fill="none" stroke="#e9e6df" stroke-opacity=".5" stroke-width="2"/>
+          <circle cx="230" cy="148" r="7" fill="#191b1d"/>
+          <rect x="226" y="84" width="8" height="40" fill="#191b1d"/>
+        </g>
+        <g font-family="IBM Plex Mono,monospace" font-size="11" fill="#a9a69f">
+          <text x="20" y="282">Ø90 · base 255 · ancho 345 mm</text>
+        </g>
+      </svg>
+      <div class="bar">
+        <span>Esquema · una de las dos chapas</span>
+        <button class="hit" id="hitBtn" type="button">Impacto</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="como">
+  <div class="wrap">
+    <div class="eyebrow">01 · Cómo funciona</div>
+    <h2>Sin base. Sin ajustes.</h2>
+    <p class="intro">Se apoya en el piso y listo. Dos chapas idénticas cruzadas a 90° forman un jack de cuatro bochas: siempre queda una cara hacia el tirador.</p>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Apoyalo</h3><p>Sobre el piso, a 12 m o más. No necesita estacas ni soporte.</p></div>
+      <div class="step"><div class="n">02</div><h3>Pegale</h3><p>El impacto lo vuelca y lo hace girar sobre sus brazos.</p></div>
+      <div class="step"><div class="n">03</div><h3>Seguí tirando</h3><p>Aparece una bocha nueva para el disparo siguiente.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="producto" class="light">
+  <div class="wrap">
+    <div class="eyebrow">02 · El producto</div>
+    <h2>Flipping Jack <span style="color:var(--red)">FPJ-R1</span></h2>
+    <p class="intro">Acero al carbono de 5/16″, corte láser CNC y soldadura continua en el cruce. Pensado para entrenar con pistola.</p>
+    <div class="prod">
+      <table>
+        <tr><td>Bochas</td><td>4 · Ø90 mm</td></tr>
+        <tr><td>Ángulo entre brazos</td><td>120°</td></tr>
+        <tr><td>Base de apoyo</td><td>255 mm</td></tr>
+        <tr><td>Ancho total</td><td>345 mm</td></tr>
+        <tr><td>Espesor de chapa</td><td>5/16″ (7,94 mm)</td></tr>
+        <tr><td>Material</td><td>Acero al carbono</td></tr>
+        <tr><td>Peso</td><td>2,6 kg</td></tr>
+        <tr><td>Terminación</td><td>Pintura para metal, rojo</td></tr>
+        <tr><td>Calibre máximo</td><td>9 mm</td></tr>
+      </table>
+      <div class="price">
+        <div class="eyebrow">Precio de lanzamiento</div>
+        <div class="amt"><small>$</small>140.000</div>
+        <p>Por unidad. Hecho en Rosario.</p>
+        <ul>
+          <li>Dos chapas cruzadas y soldadas</li>
+          <li>Ficha de seguridad incluida</li>
+          <li>La cara es consumible: se reemplaza si se pica</li>
+        </ul>
+        <a class="btn primary" href="https://instagram.com/percutor.ar" target="_blank" rel="noopener">Consultar por Instagram</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="seguridad">
+  <div class="wrap">
+    <div class="eyebrow">03 · Seguridad</div>
+    <h2>Condiciones de uso</h2>
+    <p class="intro">El blanco es de acero común, de gama accesible. Usarlo dentro de estos límites es parte de la compra.</p>
+    <div class="safe-grid">
+      <div class="rule"><h3>Calibre</h3><div class="big">9<small> mm máx.</small></div><p>Solo pistola. Nada de rifle ni munición de alta velocidad.</p></div>
+      <div class="rule"><h3>Distancia</h3><div class="big">12<small> m mín.</small></div><p>Con pistola. Inclinar la cara hacia el piso para desviar el rebote hacia abajo.</p></div>
+      <div class="rule"><h3>Munición</h3><div class="big">Pb<small> / encamisada</small></div><p>Nunca perforante, de acero ni bimetálica.</p></div>
+    </div>
+    <div class="notice">
+      <strong>Siempre protección ocular y auditiva.</strong> Inspeccioná el blanco antes de cada uso: la chapa común se pica con el tiempo. Si la cara está picada o deformada, reemplazala.
+    </div>
+  </div>
+</section>
+
+<section id="contacto" class="contact">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">04 · Contacto</div>
+      <h2>Escribinos</h2>
+      <p class="intro">Consultas, pedidos y novedades de las próximas tandas.</p>
+    </div>
+    <div>
+      <a class="ig" href="https://instagram.com/percutor.ar" target="_blank" rel="noopener">@percutor.ar</a>
+      <p class="mono" style="font-size:13px;color:var(--paper-dim);margin-top:14px">Rosario, Santa Fe, Argentina</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Percutor — Blancos de acero</span>
+    <span>FPJ-R1 · Rosario, Argentina</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var jack=document.getElementById('jack'),btn=document.getElementById('hitBtn'),n=0;
+  btn.addEventListener('click',function(){
+    n++;
+    jack.style.transform='rotate('+(120*n)+'deg)';
+  });
+})();
+</script>
+</body>
+</html>
