@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PERCUTOR — Blancos de acero · Rosario</title>
-<meta name="description" content="Percutor fabrica blancos reactivos de acero para tiro con pistola. Flipping Jack FPJ-R1: un caminador que vuelca y gira con cada impacto. Hecho en Rosario, Santa Fe.">
+<meta name="description" content="Percutor fabrica blancos reactivos de acero para tiro con pistola. Flipping Jack FPJ-R1: vuelca y gira con cada impacto. Hecho en Rosario, Santa Fe.">
 <meta name="theme-color" content="#191b1d">
 <meta property="og:title" content="PERCUTOR — Blancos de acero">
 <meta property="og:description" content="Flipping Jack FPJ-R1: blanco reactivo de acero para pistola. Hecho en Rosario.">
@@ -13,78 +13,95 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
 <style>
 :root{
   --red:#b12a26;
   --graphite:#191b1d;
-  --graphite-2:#222527;
+  --graphite-2:#212426;
   --paper:#e9e6df;
   --paper-dim:#a9a69f;
-  --line:rgba(233,230,223,.16);
+  --line:rgba(233,230,223,.14);
+  --black:'Archivo Black','Archivo',system-ui,sans-serif;
   --title:'Archivo',system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --bg-emb:var(--graphite);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--graphite);color:var(--paper);font-family:var(--title);font-weight:700;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit}
-.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
 .mono{font-family:var(--mono);font-weight:500}
-.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:600}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--red);font-weight:600}
+.emb{display:block;color:currentColor}
 
 /* NAV */
-nav{position:sticky;top:0;z-index:10;background:rgba(25,27,29,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:18px;letter-spacing:.12em}
-.brand svg{width:26px;height:26px}
+nav{position:sticky;top:0;z-index:10;background:rgba(25,27,29,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.lockup{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--paper)}
+.lockup .emb{width:36px;height:36px}
+.lockup .wm{display:flex;flex-direction:column;line-height:1}
+.lockup .wm b{font-family:var(--black);font-weight:400;font-size:21px;letter-spacing:.01em}
+.lockup .wm small{font-family:var(--mono);font-weight:500;font-size:8.5px;letter-spacing:.34em;color:var(--red);margin-top:4px}
 nav ul{display:flex;gap:26px;list-style:none;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 nav ul a{text-decoration:none;color:var(--paper-dim);font-weight:500}
 nav ul a:hover{color:var(--paper)}
-@media(max-width:640px){nav ul li:not(:last-child){display:none}}
+@media(max-width:700px){nav ul li:not(:last-child){display:none}}
 
 /* HERO */
-.hero{padding:88px 0 72px;border-bottom:1px solid var(--line)}
-.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
-.hero h1{font-weight:900;font-size:clamp(56px,10vw,128px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase;margin:16px 0 24px}
-.hero h1 span{color:var(--red)}
-.hero p.lead{font-size:20px;max-width:34ch;color:var(--paper);font-weight:700}
-.hero p.sub{font-family:var(--mono);font-weight:400;font-size:14px;color:var(--paper-dim);max-width:46ch;margin-top:14px}
+.hero{border-bottom:1px solid var(--line);overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1fr 1.05fr;gap:32px;align-items:center;min-height:calc(100vh - 64px);min-height:calc(100svh - 64px);padding-top:40px;padding-bottom:40px}
+.hero h1{font-family:var(--black);font-weight:400;font-size:clamp(52px,8.4vw,112px);line-height:.9;letter-spacing:-.01em;text-transform:uppercase;margin:18px 0 6px}
+.hero .tag{font-family:var(--mono);font-weight:500;font-size:clamp(12px,1.5vw,16px);letter-spacing:.34em;color:var(--red);margin-bottom:28px}
+.hero p.lead{font-size:21px;max-width:30ch;font-weight:700}
+.hero p.sub{font-family:var(--mono);font-weight:400;font-size:14px;color:var(--paper-dim);max-width:44ch;margin-top:14px}
 .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
 .btn{display:inline-block;font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;padding:15px 22px;border:2px solid var(--red);cursor:pointer;background:none;color:var(--paper)}
 .btn.primary{background:var(--red)}
 .btn.primary:hover{background:#c8332e;border-color:#c8332e}
 .btn:not(.primary):hover{background:rgba(177,42,38,.15)}
-@media(max-width:860px){.hero .wrap{grid-template-columns:1fr}.hero{padding-top:56px}}
 
-/* DEMO */
-.demo{background:var(--graphite-2);border:1px solid var(--line);padding:20px}
-.demo svg{width:100%;height:auto;display:block}
-.demo .bar{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--paper-dim);text-transform:uppercase;gap:12px}
-.hit{font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--red);color:var(--paper);border:0;padding:10px 16px;cursor:pointer}
+/* 3D STAGE */
+.stage{position:relative;aspect-ratio:1/1;width:100%;max-height:72vh;margin-left:auto;background:radial-gradient(60% 55% at 50% 58%,#2a2d30 0%,var(--graphite) 70%)}
+.stage canvas{display:block;width:100%!important;height:100%!important;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage .hud{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);pointer-events:none}
+.stage .hud .hit{pointer-events:auto}
+.stage .corner{position:absolute;top:10px;left:4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--paper-dim)}
+.stage .corner b{color:var(--paper);font-weight:600}
+.hit{font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:var(--red);color:var(--paper);border:0;padding:12px 18px;cursor:pointer;display:flex;align-items:center;gap:8px}
 .hit:hover{background:#c8332e}
-#jack{transform-box:fill-box;transform-origin:50% 62%;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
-#jack.flip{transform:rotate(120deg)}
-@media(prefers-reduced-motion:reduce){#jack{transition:none}}
+.hit:disabled{opacity:.6;cursor:default}
+.hit svg{width:16px;height:16px}
+.nogl{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:var(--mono);font-size:13px;color:var(--paper-dim)}
+@media(max-width:900px){
+  .hero .wrap{grid-template-columns:1fr;min-height:0;padding-top:48px;padding-bottom:24px}
+  .stage{max-height:none;margin:0 -20px;width:calc(100% + 40px)}
+  .stage .hud{padding:14px 20px}.stage .corner{left:20px}
+}
 
 /* SECTIONS */
-section{padding:84px 0;border-bottom:1px solid var(--line)}
-section.light{background:var(--paper);color:var(--graphite)}
-section.light .eyebrow{color:var(--red)}
-h2{font-weight:900;font-size:clamp(32px,5vw,56px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;margin:12px 0 20px}
+section{padding:88px 0;border-bottom:1px solid var(--line)}
+section.light{background:var(--paper);color:var(--graphite);--bg-emb:var(--paper)}
+h2{font-family:var(--black);font-weight:400;font-size:clamp(32px,5vw,58px);line-height:1;text-transform:uppercase;margin:12px 0 20px}
 .intro{font-family:var(--mono);font-weight:400;font-size:15px;max-width:58ch;color:var(--paper-dim)}
 section.light .intro{color:#4a4a47}
 
-/* HOW */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:48px;border:1px solid var(--line)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:48px;border:1px solid var(--line)}
 .step{padding:28px;border-right:1px solid var(--line)}
 .step:last-child{border-right:0}
 .step .n{font-family:var(--mono);color:var(--red);font-weight:600;font-size:13px}
-.step h3{font-weight:800;font-size:22px;text-transform:uppercase;margin:10px 0 8px}
+.step h3{font-family:var(--black);font-weight:400;font-size:22px;text-transform:uppercase;margin:10px 0 8px}
 .step p{font-family:var(--mono);font-weight:400;font-size:14px;color:var(--paper-dim)}
 @media(max-width:760px){.steps{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.step:last-child{border-bottom:0}}
 
-/* PRODUCT */
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:40px;align-items:start}
 table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:14px;font-weight:500}
 td{padding:13px 0;border-bottom:1px solid rgba(25,27,29,.18);vertical-align:top}
@@ -92,42 +109,50 @@ td:first-child{color:#5a5a56;width:48%;text-transform:uppercase;font-size:12px;l
 td:last-child{font-weight:600}
 .price{background:var(--graphite);color:var(--paper);padding:32px}
 .price .eyebrow{color:var(--paper-dim)}
-.price .amt{font-weight:900;font-size:64px;line-height:1;margin:10px 0 6px;letter-spacing:-.02em}
-.price .amt small{font-size:22px;color:var(--paper-dim);font-weight:700;margin-right:4px}
+.price .amt{font-family:var(--black);font-weight:400;font-size:64px;line-height:1;margin:12px 0 8px}
+.price .amt small{font-size:24px;color:var(--paper-dim);margin-right:4px}
 .price p{font-family:var(--mono);font-weight:400;font-size:13px;color:var(--paper-dim);margin-bottom:22px}
 .price ul{list-style:none;font-family:var(--mono);font-size:13px;font-weight:500;margin-bottom:26px}
 .price li{padding:9px 0;border-top:1px solid var(--line)}
 .price li::before{content:"■ ";color:var(--red);font-size:10px}
 @media(max-width:860px){.prod{grid-template-columns:1fr;gap:36px}}
 
-/* SAFETY */
 .safe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
 .rule{background:var(--graphite-2);border:1px solid var(--line);border-top:3px solid var(--red);padding:22px}
-.rule .big{font-weight:900;font-size:40px;line-height:1}
+.rule .big{font-family:var(--black);font-weight:400;font-size:40px;line-height:1}
 .rule .big small{font-size:18px;color:var(--paper-dim)}
 .rule h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);font-weight:600;margin-bottom:10px}
 .rule p{font-family:var(--mono);font-weight:400;font-size:13px;color:var(--paper-dim);margin-top:8px}
 .notice{margin-top:24px;padding:22px 24px;border:1px solid var(--red);background:rgba(177,42,38,.1);font-family:var(--mono);font-weight:400;font-size:14px}
-.notice strong{font-weight:600;color:var(--paper)}
+.notice strong{font-weight:600}
 @media(max-width:860px){.safe-grid{grid-template-columns:1fr}}
 
-/* CONTACT */
 .contact .wrap{display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end}
-.contact h2{margin-bottom:12px}
-.ig{font-weight:900;font-size:clamp(28px,4.5vw,48px);letter-spacing:-.01em;text-decoration:none;color:var(--paper);border-bottom:4px solid var(--red)}
+.ig{font-family:var(--black);font-weight:400;font-size:clamp(28px,4.5vw,48px);text-decoration:none;color:var(--paper);border-bottom:4px solid var(--red)}
 @media(max-width:860px){.contact .wrap{grid-template-columns:1fr}}
 
-footer{padding:36px 0;font-family:var(--mono);font-weight:400;font-size:12px;color:var(--paper-dim)}
-footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+footer{padding:40px 0;font-family:var(--mono);font-weight:400;font-size:12px;color:var(--paper-dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px}
+footer .lockup .emb{width:28px;height:28px}
 </style>
 </head>
 <body>
 
+<!-- Emblema del kit de marca: anillo del fulminante + golpe del percutor -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="emb" viewBox="0 0 100 100">
+    <path fill="currentColor" fill-rule="evenodd" d="M 2,50 a 48,48 0 1,0 96,0 a 48,48 0 1,0 -96,0 Z M 11.60,50 a 38.40,38.40 0 1,1 76.80,0 a 38.40,38.40 0 1,1 -76.80,0 Z"/>
+    <circle cx="50" cy="50" r="28.80" fill="none" stroke="currentColor" stroke-width="2.16"/>
+    <polygon fill="currentColor" points="50.00,27.92 52.48,40.73 61.04,30.88 56.79,43.21 69.12,38.96 59.27,47.52 72.08,50.00 59.27,52.48 69.12,61.04 56.79,56.79 61.04,69.12 52.48,59.27 50.00,72.08 47.52,59.27 38.96,69.12 43.21,56.79 30.88,61.04 40.73,52.48 27.92,50.00 40.73,47.52 30.88,38.96 43.21,43.21 38.96,30.88 47.52,40.73"/>
+    <circle cx="50" cy="50" r="5.28" style="fill:var(--bg-emb)"/>
+  </symbol>
+</svg>
+
 <nav>
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Percutor">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#b12a26" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="#e9e6df"/></svg>
-      PERCUTOR
+    <a class="lockup" href="#top" aria-label="Percutor, blancos de acero">
+      <svg class="emb" aria-hidden="true"><use href="#emb"/></svg>
+      <span class="wm"><b>PERCUTOR</b><small>BLANCOS DE ACERO</small></span>
     </a>
     <ul>
       <li><a href="#como">Cómo funciona</a></li>
@@ -141,40 +166,26 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 <header class="hero" id="top">
   <div class="wrap">
     <div>
-      <div class="eyebrow">Blancos de acero · Rosario, Santa Fe</div>
-      <h1>Perc<span>u</span>tor</h1>
-      <p class="lead">Un blanco que se da vuelta solo. Pegale, y te ofrece una cara nueva.</p>
-      <p class="sub">Flipping Jack FPJ-R1. Blanco reactivo de acero para pistola, cortado por láser, soldado y pintado en Rosario.</p>
+      <div class="eyebrow">Rosario · Santa Fe · Argentina</div>
+      <h1>Percutor</h1>
+      <div class="tag">BLANCOS DE ACERO</div>
+      <p class="lead">Un blanco que se da vuelta solo. Pegale y te ofrece una cara nueva.</p>
+      <p class="sub">Flipping Jack FPJ-R1. Blanco reactivo de acero para pistola, cortado por láser y soldado en Rosario.</p>
       <div class="cta">
         <a class="btn primary" href="#producto">Ver el producto</a>
         <a class="btn" href="https://instagram.com/percutor.ar" target="_blank" rel="noopener">@percutor.ar</a>
       </div>
     </div>
 
-    <div class="demo">
-      <svg viewBox="0 0 460 300" role="img" aria-label="Esquema del Flipping Jack">
-        <line x1="20" y1="252" x2="440" y2="252" stroke="#e9e6df" stroke-opacity=".35" stroke-width="2"/>
-        <g id="jack">
-          <g stroke="#b12a26" stroke-width="30" stroke-linecap="round">
-            <line x1="230" y1="148" x2="77" y2="236"/>
-            <line x1="230" y1="148" x2="383" y2="236"/>
-          </g>
-          <rect x="212" y="84" width="36" height="64" fill="#b12a26"/>
-          <circle cx="230" cy="148" r="30" fill="#b12a26"/>
-          <circle cx="77" cy="198" r="54" fill="#b12a26"/>
-          <circle cx="383" cy="198" r="54" fill="#b12a26"/>
-          <circle cx="77" cy="198" r="54" fill="none" stroke="#e9e6df" stroke-opacity=".5" stroke-width="2"/>
-          <circle cx="383" cy="198" r="54" fill="none" stroke="#e9e6df" stroke-opacity=".5" stroke-width="2"/>
-          <circle cx="230" cy="148" r="7" fill="#191b1d"/>
-          <rect x="226" y="84" width="8" height="40" fill="#191b1d"/>
-        </g>
-        <g font-family="IBM Plex Mono,monospace" font-size="11" fill="#a9a69f">
-          <text x="20" y="282">Ø90 · base 255 · ancho 345 mm</text>
-        </g>
-      </svg>
-      <div class="bar">
-        <span>Esquema · una de las dos chapas</span>
-        <button class="hit" id="hitBtn" type="button">Impacto</button>
+    <div class="stage" id="stage">
+      <div class="corner"><b>FPJ-R1</b> · arrastrá para girar</div>
+      <div class="nogl" id="nogl">Tu navegador no muestra el modelo 3D.</div>
+      <div class="hud">
+        <span id="hudTxt">4 bochas · Ø90 mm</span>
+        <button class="hit" id="hitBtn" type="button" aria-label="Simular un impacto">
+          <svg viewBox="0 0 100 100" aria-hidden="true"><polygon fill="currentColor" points="50.00,4.00 55.18,30.68 73.00,10.16 64.14,35.86 89.84,27.00 69.32,44.82 96.00,50.00 69.32,55.18 89.84,73.00 64.14,64.14 73.00,89.84 55.18,69.32 50.00,96.00 44.82,69.32 27.00,89.84 35.86,64.14 10.16,73.00 30.68,55.18 4.00,50.00 30.68,44.82 10.16,27.00 35.86,35.86 27.00,10.16 44.82,30.68"/></svg>
+          Impacto
+        </button>
       </div>
     </div>
   </div>
@@ -184,7 +195,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
   <div class="wrap">
     <div class="eyebrow">01 · Cómo funciona</div>
     <h2>Sin base. Sin ajustes.</h2>
-    <p class="intro">Se apoya en el piso y listo. Dos chapas idénticas cruzadas a 90° forman un jack de cuatro bochas: siempre queda una cara hacia el tirador.</p>
+    <p class="intro">Se apoya en el piso y listo. Dos chapas idénticas cruzadas a 90° forman un jack de cuatro bochas: cada impacto lo vuelca y siempre queda una cara hacia el tirador.</p>
     <div class="steps">
       <div class="step"><div class="n">01</div><h3>Apoyalo</h3><p>Sobre el piso, a 12 m o más. No necesita estacas ni soporte.</p></div>
       <div class="step"><div class="n">02</div><h3>Pegale</h3><p>El impacto lo vuelca y lo hace girar sobre sus brazos.</p></div>
@@ -201,14 +212,13 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
     <div class="prod">
       <table>
         <tr><td>Bochas</td><td>4 · Ø90 mm</td></tr>
-        <tr><td>Ángulo entre brazos</td><td>120°</td></tr>
-        <tr><td>Base de apoyo</td><td>255 mm</td></tr>
         <tr><td>Ancho total</td><td>345 mm</td></tr>
         <tr><td>Espesor de chapa</td><td>5/16″ (7,94 mm)</td></tr>
         <tr><td>Material</td><td>Acero al carbono</td></tr>
         <tr><td>Peso</td><td>2,6 kg</td></tr>
-        <tr><td>Terminación</td><td>Pintura para metal, rojo</td></tr>
+        <tr><td>Terminación</td><td>Pintura para metal, rojo mate</td></tr>
         <tr><td>Calibre máximo</td><td>9 mm</td></tr>
+        <tr><td>Distancia mínima</td><td>12 m</td></tr>
       </table>
       <div class="price">
         <div class="eyebrow">Precio de lanzamiento</div>
@@ -229,7 +239,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
   <div class="wrap">
     <div class="eyebrow">03 · Seguridad</div>
     <h2>Condiciones de uso</h2>
-    <p class="intro">El blanco es de acero común, de gama accesible. Usarlo dentro de estos límites es parte de la compra.</p>
+    <p class="intro">Usarlo dentro de estos límites es parte de la compra.</p>
     <div class="safe-grid">
       <div class="rule"><h3>Calibre</h3><div class="big">9<small> mm máx.</small></div><p>Solo pistola. Nada de rifle ni munición de alta velocidad.</p></div>
       <div class="rule"><h3>Distancia</h3><div class="big">12<small> m mín.</small></div><p>Con pistola. Inclinar la cara hacia el piso para desviar el rebote hacia abajo.</p></div>
@@ -257,19 +267,14 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 
 <footer>
   <div class="wrap">
-    <span>© 2026 Percutor — Blancos de acero</span>
-    <span>FPJ-R1 · Rosario, Argentina</span>
+    <a class="lockup" href="#top" aria-label="Percutor">
+      <svg class="emb" aria-hidden="true"><use href="#emb"/></svg>
+      <span class="wm"><b>PERCUTOR</b><small>BLANCOS DE ACERO</small></span>
+    </a>
+    <span>© 2026 Percutor · FPJ-R1 · Rosario, Argentina</span>
   </div>
 </footer>
 
-<script>
-(function(){
-  var jack=document.getElementById('jack'),btn=document.getElementById('hitBtn'),n=0;
-  btn.addEventListener('click',function(){
-    n++;
-    jack.style.transform='rotate('+(120*n)+'deg)';
-  });
-})();
-</script>
+<script type="module" src="jack3d.js"></script>
 </body>
 </html>
