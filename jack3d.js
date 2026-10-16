@@ -17,6 +17,9 @@ const MM = 0.01;
 const OUTLINE = [[4,137],[108,82],[115,85],[123,87],[131,88],[139,88],[147,86],[154,83],[161,79],[167,73],[172,67],[175,61],[178,53],[179,46],[178,38],[176,31],[173,24],[169,18],[163,12],[157,8],[149,4],[142,2],[134,1],[126,2],[118,3],[110,6],[103,10],[98,15],[93,21],[89,28],[86,35],[85,43],[86,50],[88,58],[7,85],[4,86],[1,86],[-1,86],[-4,86],[-7,85],[-88,58],[-86,50],[-85,43],[-86,35],[-89,28],[-93,21],[-98,15],[-103,10],[-110,6],[-118,3],[-126,2],[-134,1],[-142,2],[-149,4],[-157,8],[-163,12],[-169,18],[-173,24],[-176,31],[-178,38],[-179,46],[-178,53],[-175,61],[-172,67],[-167,73],[-161,79],[-154,83],[-147,86],[-139,88],[-131,88],[-123,87],[-115,85],[-108,82],[-4,137]];
 const THICK = 7.94;       // 5/16"
 const CROSS = 118.6;      // altura del cruce de las chapas
+const BALL_X = 132.4, BALL_Y = 44.4; // centro de bocha en el contorno de muestra
+const R_BALL = 43.5;
+const balls = [];
 
 btn.disabled = true;
 
@@ -259,6 +262,12 @@ function applySegment(s, phi) {
   const gB = gA.clone().applyMatrix4(mB);
 
   const com = centroid(gA).add(centroid(gB)).multiplyScalar(0.5);
+  // centros de las 4 bochas (y la normal de su cara) en coordenadas del cuerpo
+  for (const sx of [-1, 1]) {
+    const c = new THREE.Vector3(sx * BALL_X * MM, BALL_Y * MM, 0);
+    balls.push({ c: c.clone().sub(com), n: new THREE.Vector3(0, 0, 1) });
+    balls.push({ c: c.clone().applyMatrix4(mB).sub(com), n: new THREE.Vector3(0, 0, 1).transformDirection(mB) });
+  }
   for (const g of [gA, gB]) {
     g.translate(-com.x, -com.y, -com.z);
     const mesh = new THREE.Mesh(g, paint);
@@ -298,11 +307,22 @@ function applySegment(s, phi) {
 const ray = new THREE.Raycaster();
 btn.addEventListener('click', () => {
   if (anim || !restFace) return;
-  // punto del impacto: lo que ve el tirador apuntando al centro del jack
-  ray.set(camera.position, body.position.clone().sub(camera.position).normalize());
-  const hit = ray.intersectObject(body, true)[0];
-  if (hit) {
-    flash.position.copy(hit.point).addScaledVector(ray.ray.direction, -0.08);
+  // el tiro pega en la bocha visible que mejor mira al tirador
+  let target = null, bestScore = -Infinity;
+  for (const bl of balls) {
+    const c = bl.c.clone().applyQuaternion(body.quaternion).add(body.position);
+    const n = bl.n.clone().applyQuaternion(body.quaternion);
+    const toCam = camera.position.clone().sub(c).normalize();
+    const facing = Math.abs(n.dot(toCam));
+    // ¿se ve? el rayo desde la cámara tiene que pegar en esa bocha
+    ray.set(camera.position, c.clone().sub(camera.position).normalize());
+    const h = ray.intersectObject(body, true)[0];
+    const seen = h && h.point.distanceTo(c) < R_BALL * MM * 1.05;
+    const score = facing + (seen ? 1 : -2);
+    if (score > bestScore) { bestScore = score; target = { c, toCam, point: seen ? h.point : c }; }
+  }
+  if (target) {
+    flash.position.copy(target.point).addScaledVector(target.toCam, 0.06);
     flash.visible = true;
   }
   const away = body.position.clone().sub(camera.position).setY(0).normalize();
