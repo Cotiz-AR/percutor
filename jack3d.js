@@ -148,9 +148,9 @@ function buildHullFaces(points) {
   return planes;
 }
 
-// ¿la proyección del centro de masa cae dentro del apoyo? (polígono en el piso, mundo XZ)
+// Apoyo en el piso: envolvente 2D (mundo XZ) que guarda el punto local de cada vértice
 function hull2D(pts) {
-  const p = pts.map(v => [v.x, v.z]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
   const lo = [], up = [];
   for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 1e-9) lo.pop(); lo.push(q); }
@@ -158,8 +158,11 @@ function hull2D(pts) {
   up.pop(); lo.pop();
   return lo.concat(up); // antihorario
 }
-function contactWorld(face, q, pos) {
-  return face.pts.map(v => v.clone().applyQuaternion(q).add(pos));
+function contact(face, q, pos) {
+  return hull2D(face.pts.map(v => {
+    const w = v.clone().applyQuaternion(q).add(pos);
+    const r = [w.x, w.z]; r.l = v; return r;
+  }));
 }
 function stableMargin(poly, cx, cz) {
   if (poly.length < 3) return -1;
@@ -174,6 +177,7 @@ function stableMargin(poly, cx, cz) {
   return m;
 }
 
+let REST_D = 0;
 function restOn(face, yaw) {
   const q = new THREE.Quaternion().setFromUnitVectors(face.n, DOWN);
   q.premultiply(new THREE.Quaternion().setFromAxisAngle(UP, yaw));
@@ -182,36 +186,40 @@ function restOn(face, yaw) {
   restFace = face;
 }
 
-// Secuencia de vuelcos empujando en la dirección horizontal `away`
+// Asienta exactamente la cara en el piso (evita que el error numérico se acumule)
+function settle(face, q, pos) {
+  const nw = face.n.clone().applyQuaternion(q);
+  q.premultiply(new THREE.Quaternion().setFromUnitVectors(nw, DOWN)).normalize();
+  pos.y = face.d;
+}
+
+// Secuencia de vuelcos empujando en la dirección horizontal `away`:
+// vuelca arista por arista hasta caer estable en una pose equivalente a la de reposo
 function planTumble(away) {
   const segs = [];
-  let q = body.quaternion.clone();
+  let q = body.quaternion.clone().normalize();
   let pos = body.position.clone();
   let face = restFace;
-  for (let step = 0; step < 60; step++) {
-    const poly = hull2D(contactWorld(face, q, pos));
-    // arista de apoyo cuyo lado mira más hacia `away`
+  settle(face, q, pos);
+  let lastStable = { n: 0, q: q.clone(), pos: pos.clone(), face };
+  for (let step = 0; step < 80; step++) {
+    const poly = contact(face, q, pos);
     let best = null, bestDot = -Infinity;
     for (let i = 0; i < poly.length; i++) {
       const a = poly[i], b = poly[(i + 1) % poly.length];
       const ex = b[0] - a[0], ez = b[1] - a[1];
       const len = Math.hypot(ex, ez);
       if (len < 1e-4) continue;
-      const m = new THREE.Vector3(ez / len, 0, -ex / len); // normal hacia afuera (antihorario)
+      const m = new THREE.Vector3(ez / len, 0, -ex / len); // normal hacia afuera
       const dt = m.dot(away);
       if (dt > bestDot) { bestDot = dt; best = { a, b, m }; }
     }
     if (!best) break;
     const k = new THREE.Vector3().crossVectors(UP, best.m).normalize();
     const p0 = new THREE.Vector3(best.a[0], 0, best.a[1]);
-    // próxima cara que contiene la arista: menor ángulo de giro positivo
-    const qi = q.clone().invert();
-    const ea = new THREE.Vector3(best.a[0], 0, best.a[1]).sub(pos).applyQuaternion(qi);
-    const eb = new THREE.Vector3(best.b[0], 0, best.b[1]).sub(pos).applyQuaternion(qi);
     let next = null, nextAng = Infinity;
     for (const f of faces) {
-      if (f === face) continue;
-      if (Math.abs(ea.dot(f.n) - f.d) > 0.004 || Math.abs(eb.dot(f.n) - f.d) > 0.004) continue;
+      if (f === face || !f.pts.includes(best.a.l) || !f.pts.includes(best.b.l)) continue;
       const nw = f.n.clone().applyQuaternion(q);
       let ang = Math.atan2(k.dot(new THREE.Vector3().crossVectors(nw, DOWN)), nw.dot(DOWN));
       if (ang <= 1e-4) ang += Math.PI * 2;
@@ -222,12 +230,16 @@ function planTumble(away) {
     segs.push({ p0, k, ang: nextAng, q0: q.clone(), pos0: pos.clone() });
     q = R.clone().multiply(q);
     pos = p0.clone().add(pos.clone().sub(p0).applyQuaternion(R));
-    pos.y = next.d; // corrige deriva numérica
     face = next;
-    const poly2 = hull2D(contactWorld(face, q, pos));
-    if (stableMargin(poly2, pos.x, pos.z) > 0.01) break;
+    settle(face, q, pos);
+    const margin = stableMargin(contact(face, q, pos), pos.x, pos.z);
+    if (margin > 0.01) {
+      lastStable = { n: segs.length, q: q.clone(), pos: pos.clone(), face };
+      if (Math.abs(face.d - REST_D) < 0.003) break;   // cayó en la pose de reposo
+    }
   }
-  return { segs, q, pos, face };
+  segs.length = lastStable.n;
+  return { segs, q: lastStable.q, pos: lastStable.pos, face: lastStable.face };
 }
 
 function applySegment(s, phi) {
@@ -260,16 +272,22 @@ function applySegment(s, phi) {
     const p = g.attributes.position;
     for (let i = 0; i < p.count; i++) pts.push(new THREE.Vector3().fromBufferAttribute(p, i));
   }
+  // un solo objeto por vértice, así las aristas se comparan por identidad
+  const seen = new Map();
+  for (const v of pts) seen.set(`${v.x.toFixed(5)},${v.y.toFixed(5)},${v.z.toFixed(5)}`, v);
+  pts.length = 0;
+  pts.push(...seen.values());
   faces = buildHullFaces(pts);
 
   // Pose inicial: la cara estable con el centro de masa más bajo
   let best = null;
   for (const f of faces) {
     const q = new THREE.Quaternion().setFromUnitVectors(f.n, DOWN);
-    const poly = hull2D(contactWorld(f, q, new THREE.Vector3(0, f.d, 0)));
+    const poly = contact(f, q, new THREE.Vector3(0, f.d, 0));
     const m = stableMargin(poly, 0, 0);
     if (m > 0.01 && (!best || f.d < best.d - 1e-4 || (Math.abs(f.d - best.d) < 1e-4 && m > best.m))) best = { f, d: f.d, m };
   }
+  REST_D = best.f.d;
   restOn(best.f, -0.6);
   controls.target.set(0, 1.0, 0);
   controls.update();
@@ -357,7 +375,7 @@ renderer.setAnimationLoop(() => {
   } else if (!dragging && !reduce && restFace) {
     // gira despacio sobre su apoyo
     spin.setFromAxisAngle(UP, dt * 0.3);
-    body.quaternion.premultiply(spin);
+    body.quaternion.premultiply(spin).normalize();
   }
 
   follow();
