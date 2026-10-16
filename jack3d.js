@@ -1,9 +1,12 @@
 // Flipping Jack FPJ-R1 — modelo 3D interactivo
-// Geometría del documento del proyecto: dos chapas idénticas de 5/16" cruzadas a 90°,
-// cada una con 3 brazos a 120° (2 con bocha Ø90 + 1 con la ranura de encastre),
-// brazo cubo→centro de bocha 147,2 mm. Unidades de escena: 1 = 100 mm.
+// Contorno de muestra derivado de la pieza: sin ranura ni dogbone, con cotas alteradas y
+// redondeadas (sirve para ver, no para cortar). El jack se arma como en el taller:
+// dos chapas idénticas, la segunda girada 90° y dada vuelta, cruzadas en el vértice. El vuelco se calcula como cuerpo rígido sobre su envolvente convexa:
+// cada impacto lo hace volcar sobre una arista hasta que queda estable en una nueva cara.
+// Unidades de escena: 1 = 100 mm.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 
 const stage = document.getElementById('stage');
 const btn = document.getElementById('hitBtn');
@@ -11,21 +14,17 @@ const hud = document.getElementById('hudTxt');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const MM = 0.01;
-const T = 7.94 * MM;         // espesor de chapa
-const ARM = 147.2 * MM;      // cubo → centro de bocha
-const R_BALL = 45 * MM;      // bocha Ø90
-const R_HUB = 34 * MM;
-const ARM_W = 42 * MM;
-const POST_TOP = 22.4 * MM;  // alto por pieza ~141 mm
-const HUB_H = (ARM * 0.5 + R_BALL); // altura del cubo apoyado en las 4 bochas (118,6 mm)
-const REST_TOP = HUB_H + POST_TOP + 12 * MM; // parte más alta en reposo
+const OUTLINE = [[4,137],[108,82],[115,85],[123,87],[131,88],[139,88],[147,86],[154,83],[161,79],[167,73],[172,67],[175,61],[178,53],[179,46],[178,38],[176,31],[173,24],[169,18],[163,12],[157,8],[149,4],[142,2],[134,1],[126,2],[118,3],[110,6],[103,10],[98,15],[93,21],[89,28],[86,35],[85,43],[86,50],[88,58],[7,85],[4,86],[1,86],[-1,86],[-4,86],[-7,85],[-88,58],[-86,50],[-85,43],[-86,35],[-89,28],[-93,21],[-98,15],[-103,10],[-110,6],[-118,3],[-126,2],[-134,1],[-142,2],[-149,4],[-157,8],[-163,12],[-169,18],[-173,24],[-176,31],[-178,38],[-179,46],[-178,53],[-175,61],[-172,67],[-167,73],[-161,79],[-154,83],[-147,86],[-139,88],[-131,88],[-123,87],[-115,85],[-108,82],[-4,137]];
+const THICK = 7.94;       // 5/16"
+const CROSS = 118.6;      // altura del cruce de las chapas
+
+btn.disabled = true;
 
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 } catch (e) {
   document.getElementById('nogl').style.display = 'flex';
-  btn.disabled = true;
   throw e;
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -35,95 +34,50 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-camera.position.set(3.7, 2.55, 6.0);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
+camera.position.set(5.6, 3.6, 8.4);
 
-// Luces
 scene.add(new THREE.HemisphereLight(0xf2efe8, 0x1a1c1e, 1.1));
 const key = new THREE.DirectionalLight(0xffffff, 2.4);
-key.position.set(3, 6, 4);
 key.castShadow = true;
 key.shadow.mapSize.set(1024, 1024);
-Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 15 });
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 20 });
 key.shadow.radius = 4;
-scene.add(key);
+scene.add(key, key.target);
+const KEY_OFF = new THREE.Vector3(3, 6, 4);
 const rim = new THREE.DirectionalLight(0xe9e6df, 0.9);
 rim.position.set(-4, 3, -3);
 scene.add(rim);
 
-// Piso: solo sombra
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.38 }));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ opacity: 0.38 }));
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
-const grid = new THREE.GridHelper(8, 16, 0x3a3d40, 0x2a2d30);
+const grid = new THREE.GridHelper(80, 160, 0x3a3d40, 0x2a2d30);
 grid.material.transparent = true;
 grid.material.opacity = 0.5;
 scene.add(grid);
 
-// Material: pintura para metal, rojo mate
 const paint = new THREE.MeshStandardMaterial({ color: 0xb12a26, roughness: 0.72, metalness: 0.18 });
 
-const bevel = { depth: T - 1.6 * MM, bevelEnabled: true, bevelThickness: 0.8 * MM, bevelSize: 0.8 * MM, bevelSegments: 2, curveSegments: 48 };
-function extrude(shape) {
-  const g = new THREE.ExtrudeGeometry(shape, bevel);
-  g.translate(0, 0, -(T - 1.6 * MM) / 2);
-  const m = new THREE.Mesh(g, paint);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  return m;
-}
-function circle(x, y, r) {
-  const s = new THREE.Shape();
-  s.absarc(x, y, r, 0, Math.PI * 2, false);
-  return s;
-}
-function rect(cx, cy, w, h, ang) {
-  const s = new THREE.Shape();
-  const c = Math.cos(ang), sn = Math.sin(ang);
-  const pts = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]]
-    .map(([x, y]) => new THREE.Vector2(cx + x * c - y * sn, cy + x * sn + y * c));
-  s.setFromPoints(pts);
-  return s;
-}
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableZoom = false;
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.minPolarAngle = 0.8;
+controls.maxPolarAngle = 1.42;
+renderer.domElement.style.touchAction = 'pan-y';
+let dragging = false;
+controls.addEventListener('start', () => { dragging = true; });
+controls.addEventListener('end', () => { dragging = false; });
 
-// Una chapa en el plano XY, cubo en el origen, brazo de encastre hacia +Y
-function plate() {
-  const g = new THREE.Group();
-  g.add(extrude(circle(0, 0, R_HUB)));
-  g.add(extrude(rect(0, POST_TOP / 2 + 6 * MM, 46 * MM, POST_TOP + 12 * MM, 0)));
-  const faces = [];
-  for (const a of [120, 240]) {
-    const t = THREE.MathUtils.degToRad(a);
-    const dx = Math.sin(t), dy = Math.cos(t);
-    g.add(extrude(rect(dx * ARM / 2, dy * ARM / 2, ARM_W, ARM, -t)));
-    const ball = extrude(circle(dx * ARM, dy * ARM, R_BALL));
-    g.add(ball);
-    const marker = new THREE.Object3D();
-    marker.position.set(dx * ARM, dy * ARM, 0);
-    g.add(marker);
-    faces.push(marker);
-  }
-  return { g, faces };
-}
-
-const pivot = new THREE.Group();     // centro del cubo
-scene.add(pivot);
-const jack = new THREE.Group();
-pivot.add(jack);
-const A = plate(), B = plate();
-B.g.rotation.y = Math.PI / 2;
-jack.add(A.g, B.g);
-const faces = [...A.faces, ...B.faces];
-pivot.position.y = HUB_H;
-
-// Destello de impacto con la estrella del emblema
+// Destello con la estrella del emblema
 function starTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const x = c.getContext('2d');
   x.translate(128, 128);
-  x.fillStyle = '#e9e6df';
+  x.fillStyle = '#ffffff';
   x.beginPath();
   for (let i = 0; i < 24; i++) {
     const a = Math.PI * i / 12 - Math.PI / 2;
@@ -140,66 +94,222 @@ const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTexture(), tr
 flash.visible = false;
 scene.add(flash);
 
-// Controles: arrastrar en horizontal gira; en celular el scroll vertical sigue funcionando
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0.62, 0);
-controls.enableZoom = false;
-controls.enablePan = false;
-controls.enableDamping = true;
-controls.minPolarAngle = 0.85;
-controls.maxPolarAngle = 1.42;
-controls.update();
-renderer.domElement.style.touchAction = 'pan-y';
+const UP = new THREE.Vector3(0, 1, 0);
+const DOWN = new THREE.Vector3(0, -1, 0);
 
-let dragging = false;
-controls.addEventListener('start', () => { dragging = true; });
-controls.addEventListener('end', () => { dragging = false; });
-
-// Seguimiento de cámara durante el vuelco
-const baseTargetY = controls.target.y;
-let camLift = 0, camZoom = 1;
-const tmp = new THREE.Vector3();
-function follow(lift, zoom) {
-  const dLift = lift - camLift;
-  controls.target.y += dLift;
-  camera.position.y += dLift;
-  tmp.subVectors(camera.position, controls.target).multiplyScalar(zoom / camZoom);
-  camera.position.copy(controls.target).add(tmp);
-  camLift = lift; camZoom = zoom;
+// ---------- Geometría ----------
+function plateGeometry() {
+  const shape = new THREE.Shape(OUTLINE.map(([x, y]) => new THREE.Vector2(x * MM, y * MM)));
+  const g = new THREE.ExtrudeGeometry(shape, { depth: THICK * MM, bevelEnabled: false, curveSegments: 1 });
+  g.translate(0, 0, -THICK * MM / 2);
+  g.computeVertexNormals();
+  return g;
 }
 
-// Estado
-let yaw = 0;
+// Volumen y centroide de una malla cerrada
+function centroid(geom) {
+  const p = geom.attributes.position, idx = geom.index;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const sum = new THREE.Vector3();
+  let vol = 0;
+  const n = idx ? idx.count : p.count;
+  for (let i = 0; i < n; i += 3) {
+    const i0 = idx ? idx.getX(i) : i, i1 = idx ? idx.getX(i + 1) : i + 1, i2 = idx ? idx.getX(i + 2) : i + 2;
+    a.fromBufferAttribute(p, i0); b.fromBufferAttribute(p, i1); c.fromBufferAttribute(p, i2);
+    const v = a.dot(new THREE.Vector3().crossVectors(b, c)) / 6;
+    vol += v;
+    sum.addScaledVector(new THREE.Vector3().add(a).add(b).add(c), v / 4);
+  }
+  return sum.divideScalar(vol);
+}
+
+// ---------- Estado físico ----------
+const body = new THREE.Group();   // origen = centro de masa
+scene.add(body);
+let faces = [];                   // caras de la envolvente en coordenadas locales
+let restFace = null;
 let anim = null;
 let hits = 0;
-const qBase = new THREE.Quaternion();
-const UP = new THREE.Vector3(0, 1, 0);
 
-const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-btn.addEventListener('click', () => {
-  if (anim) return;
-  // Bocha más de frente a la cámara
-  const camDir = new THREE.Vector3().subVectors(camera.position, pivot.position).setY(0).normalize();
-  let best = null, bestDot = -Infinity;
-  const wp = new THREE.Vector3();
-  for (const f of faces) {
-    f.getWorldPosition(wp);
-    const d = wp.clone().sub(pivot.position).setY(0).normalize().dot(camDir);
-    if (d > bestDot) { bestDot = d; best = wp.clone(); }
+function buildHullFaces(points) {
+  const hull = new ConvexHull().setFromPoints(points);
+  const planes = [];
+  for (const f of hull.faces) {
+    const n = f.normal.clone();
+    let pl = planes.find(q => q.n.dot(n) > 0.99995);
+    if (!pl) { pl = { n, d: 0, pts: [] }; planes.push(pl); }
   }
-  flash.position.copy(best).addScaledVector(camDir, 0.12);
-  flash.visible = true;
+  for (const pl of planes) {
+    let d = -Infinity;
+    for (const v of points) d = Math.max(d, v.dot(pl.n));
+    pl.d = d;
+    pl.pts = points.filter(v => Math.abs(v.dot(pl.n) - d) < 0.002);
+  }
+  return planes;
+}
 
-  const away = camDir.clone().negate();
-  const axis = new THREE.Vector3().crossVectors(UP, away).normalize();
+// ¿la proyección del centro de masa cae dentro del apoyo? (polígono en el piso, mundo XZ)
+function hull2D(pts) {
+  const p = pts.map(v => [v.x, v.z]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 1e-9) lo.pop(); lo.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 1e-9) up.pop(); up.push(q); }
+  up.pop(); lo.pop();
+  return lo.concat(up); // antihorario
+}
+function contactWorld(face, q, pos) {
+  return face.pts.map(v => v.clone().applyQuaternion(q).add(pos));
+}
+function stableMargin(poly, cx, cz) {
+  if (poly.length < 3) return -1;
+  let m = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    const ex = b[0] - a[0], ez = b[1] - a[1];
+    const len = Math.hypot(ex, ez);
+    const dist = (ex * (cz - a[1]) - ez * (cx - a[0])) / len; // >0 adentro (antihorario)
+    m = Math.min(m, dist);
+  }
+  return m;
+}
+
+function restOn(face, yaw) {
+  const q = new THREE.Quaternion().setFromUnitVectors(face.n, DOWN);
+  q.premultiply(new THREE.Quaternion().setFromAxisAngle(UP, yaw));
+  body.quaternion.copy(q);
+  body.position.set(body.position.x, face.d, body.position.z);
+  restFace = face;
+}
+
+// Secuencia de vuelcos empujando en la dirección horizontal `away`
+function planTumble(away) {
+  const segs = [];
+  let q = body.quaternion.clone();
+  let pos = body.position.clone();
+  let face = restFace;
+  for (let step = 0; step < 60; step++) {
+    const poly = hull2D(contactWorld(face, q, pos));
+    // arista de apoyo cuyo lado mira más hacia `away`
+    let best = null, bestDot = -Infinity;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      const ex = b[0] - a[0], ez = b[1] - a[1];
+      const len = Math.hypot(ex, ez);
+      if (len < 1e-4) continue;
+      const m = new THREE.Vector3(ez / len, 0, -ex / len); // normal hacia afuera (antihorario)
+      const dt = m.dot(away);
+      if (dt > bestDot) { bestDot = dt; best = { a, b, m }; }
+    }
+    if (!best) break;
+    const k = new THREE.Vector3().crossVectors(UP, best.m).normalize();
+    const p0 = new THREE.Vector3(best.a[0], 0, best.a[1]);
+    // próxima cara que contiene la arista: menor ángulo de giro positivo
+    const qi = q.clone().invert();
+    const ea = new THREE.Vector3(best.a[0], 0, best.a[1]).sub(pos).applyQuaternion(qi);
+    const eb = new THREE.Vector3(best.b[0], 0, best.b[1]).sub(pos).applyQuaternion(qi);
+    let next = null, nextAng = Infinity;
+    for (const f of faces) {
+      if (f === face) continue;
+      if (Math.abs(ea.dot(f.n) - f.d) > 0.004 || Math.abs(eb.dot(f.n) - f.d) > 0.004) continue;
+      const nw = f.n.clone().applyQuaternion(q);
+      let ang = Math.atan2(k.dot(new THREE.Vector3().crossVectors(nw, DOWN)), nw.dot(DOWN));
+      if (ang <= 1e-4) ang += Math.PI * 2;
+      if (ang < nextAng) { nextAng = ang; next = f; }
+    }
+    if (!next) break;
+    const R = new THREE.Quaternion().setFromAxisAngle(k, nextAng);
+    segs.push({ p0, k, ang: nextAng, q0: q.clone(), pos0: pos.clone() });
+    q = R.clone().multiply(q);
+    pos = p0.clone().add(pos.clone().sub(p0).applyQuaternion(R));
+    pos.y = next.d; // corrige deriva numérica
+    face = next;
+    const poly2 = hull2D(contactWorld(face, q, pos));
+    if (stableMargin(poly2, pos.x, pos.z) > 0.01) break;
+  }
+  return { segs, q, pos, face };
+}
+
+function applySegment(s, phi) {
+  const R = new THREE.Quaternion().setFromAxisAngle(s.k, phi);
+  body.quaternion.copy(R).multiply(s.q0);
+  body.position.copy(s.p0).add(s.pos0.clone().sub(s.p0).applyQuaternion(R));
+}
+
+// ---------- Armado del jack ----------
+(() => {
+  const gA = plateGeometry();
+  // Chapa B: girada 90° en vertical y dada vuelta, con las ranuras encastradas
+  const mB = new THREE.Matrix4()
+    .makeTranslation(0, 2 * CROSS * MM, 0)
+    .multiply(new THREE.Matrix4().makeRotationZ(Math.PI))
+    .multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2));
+  const gB = gA.clone().applyMatrix4(mB);
+
+  const com = centroid(gA).add(centroid(gB)).multiplyScalar(0.5);
+  for (const g of [gA, gB]) {
+    g.translate(-com.x, -com.y, -com.z);
+    const mesh = new THREE.Mesh(g, paint);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    body.add(mesh);
+  }
+
+  const pts = [];
+  for (const g of [gA, gB]) {
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) pts.push(new THREE.Vector3().fromBufferAttribute(p, i));
+  }
+  faces = buildHullFaces(pts);
+
+  // Pose inicial: la cara estable con el centro de masa más bajo
+  let best = null;
+  for (const f of faces) {
+    const q = new THREE.Quaternion().setFromUnitVectors(f.n, DOWN);
+    const poly = hull2D(contactWorld(f, q, new THREE.Vector3(0, f.d, 0)));
+    const m = stableMargin(poly, 0, 0);
+    if (m > 0.01 && (!best || f.d < best.d - 1e-4 || (Math.abs(f.d - best.d) < 1e-4 && m > best.m))) best = { f, d: f.d, m };
+  }
+  restOn(best.f, -0.6);
+  controls.target.set(0, 1.0, 0);
+  controls.update();
+  btn.disabled = false;
+})();
+
+// ---------- Impacto ----------
+const ray = new THREE.Raycaster();
+btn.addEventListener('click', () => {
+  if (anim || !restFace) return;
+  // punto del impacto: lo que ve el tirador apuntando al centro del jack
+  ray.set(camera.position, body.position.clone().sub(camera.position).normalize());
+  const hit = ray.intersectObject(body, true)[0];
+  if (hit) {
+    flash.position.copy(hit.point).addScaledVector(ray.ray.direction, -0.08);
+    flash.visible = true;
+  }
+  const away = body.position.clone().sub(camera.position).setY(0).normalize();
+  const plan = planTumble(away);
+  if (!plan.segs.length) return;
   hits++;
   hud.textContent = `Impactos: ${hits}`;
-  qBase.copy(pivot.quaternion);
-  anim = { t0: performance.now() + 140, dur: reduce ? 1 : 1300, axis, away, flashT0: performance.now() };
+  const total = plan.segs.reduce((s, x) => s + x.ang, 0);
+  const now = performance.now();
+  anim = { plan, total, t0: now + 90, dur: reduce ? 1 : 520 + total * 260, flashT0: now };
 });
 
-// Tamaño
+// ---------- Cámara que acompaña ----------
+const followPrev = new THREE.Vector3();
+function follow() {
+  const d = new THREE.Vector3(body.position.x - followPrev.x, 0, body.position.z - followPrev.z);
+  followPrev.set(body.position.x, 0, body.position.z);
+  controls.target.add(d);
+  camera.position.add(d);
+  key.target.position.set(body.position.x, 0, body.position.z);
+  key.position.copy(key.target.position).add(KEY_OFF);
+  // la grilla se recicla para que el piso nunca se termine
+  grid.position.set(Math.round(body.position.x / 0.5) * 0.5, 0, Math.round(body.position.z / 0.5) * 0.5);
+}
+
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false);
@@ -209,14 +319,13 @@ function resize() {
 new ResizeObserver(resize).observe(stage);
 resize();
 
-// Render solo si se ve
 let visible = true;
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 }).observe(stage);
 
-const qYaw = new THREE.Quaternion();
-const qTum = new THREE.Quaternion();
-const box = new THREE.Box3();
+// vuelco: arranca lento y se acelera (cae por gravedad), con un pequeño rebote al apoyar
+const easeFall = t => t * t * (3 - 2 * t) * 0.35 + t * t * 0.65;
 let last = performance.now();
+const spin = new THREE.Quaternion();
 
 renderer.setAnimationLoop(() => {
   const now = performance.now();
@@ -226,43 +335,32 @@ renderer.setAnimationLoop(() => {
 
   if (anim) {
     const t = Math.max(0, Math.min((now - anim.t0) / anim.dur, 1));
-    const e = ease(t);
-    // vuelca 360° alejándose del tirador y gira 90° (por simetría queda otra cara al frente)
-    qTum.setFromAxisAngle(anim.axis, reduce ? 0 : e * Math.PI * 2);
-    qYaw.setFromAxisAngle(UP, e * Math.PI / 2);
-    pivot.quaternion.copy(qYaw).multiply(qTum).multiply(qBase);
-    // rueda sobre el piso: el punto más bajo nunca lo atraviesa, más un pequeño salto
-    const slide = reduce ? 0 : Math.sin(Math.PI * t) * 0.5;
-    pivot.position.set(anim.away.x * slide, HUB_H, anim.away.z * slide);
-    pivot.updateMatrixWorld(true);
-    box.setFromObject(jack, true);
-    const hop = reduce ? 0 : Math.sin(Math.PI * Math.min(t * 1.6, 1)) * 0.22;
-    pivot.position.y += Math.max(0, -box.min.y) + hop;
-    // cámara que acompaña: sube y se aleja mientras el jack está alto
-    const top = box.max.y + (pivot.position.y - HUB_H); // box se midió con el cubo a HUB_H
-    const rise = Math.max(0, top - REST_TOP);
-    follow(rise * 0.5, 1 + rise * 0.55);
-
+    let rem = easeFall(t) * anim.total;
+    for (const s of anim.plan.segs) {
+      if (rem <= s.ang || s === anim.plan.segs[anim.plan.segs.length - 1]) { applySegment(s, Math.min(rem, s.ang)); break; }
+      rem -= s.ang;
+    }
     const ft = (now - anim.flashT0) / 420;
     if (ft < 1) {
-      const s = 0.25 + ft * 0.75;
-      flash.scale.set(s, s, s);
+      const sc = 0.22 + ft * 0.7;
+      flash.scale.set(sc, sc, sc);
       flash.material.opacity = 1 - ft;
       flash.material.color.set(ft < 0.2 ? 0xffffff : 0xf0c8b8);
     } else flash.visible = false;
-
     if (t >= 1) {
-      pivot.position.set(0, HUB_H, 0);
-      follow(0, 1);
+      body.quaternion.copy(anim.plan.q);
+      body.position.copy(anim.plan.pos);
+      restFace = anim.plan.face;
       flash.visible = false;
       anim = null;
     }
-  } else if (!dragging && !reduce) {
-    yaw += dt * 0.35;
-    qYaw.setFromAxisAngle(UP, dt * 0.35);
-    pivot.quaternion.premultiply(qYaw);
+  } else if (!dragging && !reduce && restFace) {
+    // gira despacio sobre su apoyo
+    spin.setFromAxisAngle(UP, dt * 0.3);
+    body.quaternion.premultiply(spin);
   }
 
+  follow();
   controls.update();
   renderer.render(scene, camera);
 });
