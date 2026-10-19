@@ -1,9 +1,3 @@
-// Flipping Jack FPJ-R1 — modelo 3D interactivo
-// Contorno de muestra derivado de la pieza: sin ranura ni dogbone, con cotas alteradas y
-// redondeadas (sirve para ver, no para cortar). El jack se arma como en el taller:
-// dos chapas idénticas, la segunda girada 90° y dada vuelta, cruzadas en el vértice. El vuelco se calcula como cuerpo rígido sobre su envolvente convexa:
-// cada impacto lo hace volcar sobre una arista hasta que queda estable en una nueva cara.
-// Unidades de escena: 1 = 100 mm.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
@@ -15,9 +9,9 @@ const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const MM = 0.01;
 const OUTLINE = [[4,137],[108,82],[115,85],[123,87],[131,88],[139,88],[147,86],[154,83],[161,79],[167,73],[172,67],[175,61],[178,53],[179,46],[178,38],[176,31],[173,24],[169,18],[163,12],[157,8],[149,4],[142,2],[134,1],[126,2],[118,3],[110,6],[103,10],[98,15],[93,21],[89,28],[86,35],[85,43],[86,50],[88,58],[7,85],[4,86],[1,86],[-1,86],[-4,86],[-7,85],[-88,58],[-86,50],[-85,43],[-86,35],[-89,28],[-93,21],[-98,15],[-103,10],[-110,6],[-118,3],[-126,2],[-134,1],[-142,2],[-149,4],[-157,8],[-163,12],[-169,18],[-173,24],[-176,31],[-178,38],[-179,46],[-178,53],[-175,61],[-172,67],[-167,73],[-161,79],[-154,83],[-147,86],[-139,88],[-131,88],[-123,87],[-115,85],[-108,82],[-4,137]];
-const THICK = 7.94;       // 5/16"
-const CROSS = 118.6;      // altura del cruce de las chapas
-const BALL_X = 132.4, BALL_Y = 44.4; // centro de bocha en el contorno de muestra
+const K1 = 8;
+const K0 = 118.6;
+const BALL_X = 132.4, BALL_Y = 44.4;
 const R_BALL = 43.5;
 const balls = [];
 
@@ -74,7 +68,6 @@ let dragging = false;
 controls.addEventListener('start', () => { dragging = true; });
 controls.addEventListener('end', () => { dragging = false; });
 
-// Destello con la estrella del emblema
 function starTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
@@ -100,16 +93,14 @@ scene.add(flash);
 const UP = new THREE.Vector3(0, 1, 0);
 const DOWN = new THREE.Vector3(0, -1, 0);
 
-// ---------- Geometría ----------
 function plateGeometry() {
   const shape = new THREE.Shape(OUTLINE.map(([x, y]) => new THREE.Vector2(x * MM, y * MM)));
-  const g = new THREE.ExtrudeGeometry(shape, { depth: THICK * MM, bevelEnabled: false, curveSegments: 1 });
-  g.translate(0, 0, -THICK * MM / 2);
+  const g = new THREE.ExtrudeGeometry(shape, { depth: K1 * MM, bevelEnabled: false, curveSegments: 1 });
+  g.translate(0, 0, -K1 * MM / 2);
   g.computeVertexNormals();
   return g;
 }
 
-// Volumen y centroide de una malla cerrada
 function centroid(geom) {
   const p = geom.attributes.position, idx = geom.index;
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
@@ -126,10 +117,9 @@ function centroid(geom) {
   return sum.divideScalar(vol);
 }
 
-// ---------- Estado físico ----------
-const body = new THREE.Group();   // origen = centro de masa
+const body = new THREE.Group();
 scene.add(body);
-let faces = [];                   // caras de la envolvente en coordenadas locales
+let faces = [];
 let restFace = null;
 let anim = null;
 let hits = 0;
@@ -151,7 +141,6 @@ function buildHullFaces(points) {
   return planes;
 }
 
-// Apoyo en el piso: envolvente 2D (mundo XZ) que guarda el punto local de cada vértice
 function hull2D(pts) {
   const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
@@ -159,7 +148,7 @@ function hull2D(pts) {
   for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 1e-9) lo.pop(); lo.push(q); }
   for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 1e-9) up.pop(); up.push(q); }
   up.pop(); lo.pop();
-  return lo.concat(up); // antihorario
+  return lo.concat(up);
 }
 function contact(face, q, pos) {
   return hull2D(face.pts.map(v => {
@@ -174,7 +163,7 @@ function stableMargin(poly, cx, cz) {
     const a = poly[i], b = poly[(i + 1) % poly.length];
     const ex = b[0] - a[0], ez = b[1] - a[1];
     const len = Math.hypot(ex, ez);
-    const dist = (ex * (cz - a[1]) - ez * (cx - a[0])) / len; // >0 adentro (antihorario)
+    const dist = (ex * (cz - a[1]) - ez * (cx - a[0])) / len;
     m = Math.min(m, dist);
   }
   return m;
@@ -189,18 +178,13 @@ function restOn(face, yaw) {
   restFace = face;
 }
 
-// Asienta exactamente la cara en el piso (evita que el error numérico se acumule)
 function settle(face, q, pos) {
   const nw = face.n.clone().applyQuaternion(q);
   q.premultiply(new THREE.Quaternion().setFromUnitVectors(nw, DOWN)).normalize();
   pos.y = face.d;
 }
 
-// Secuencia de vuelcos empujando en la dirección horizontal `away`:
-// vuelca arista por arista hasta caer estable en una pose equivalente a la de reposo
 function planTumble(F, P) {
-  // F: dirección del tiro, P: punto del impacto. El primer vuelco va sobre la arista
-  // con mayor momento del impulso; los siguientes siguen rodando hacia el mismo lado.
   let away = null;
   const segs = [];
   let q = body.quaternion.clone().normalize();
@@ -216,12 +200,12 @@ function planTumble(F, P) {
       const ex = b[0] - a[0], ez = b[1] - a[1];
       const len = Math.hypot(ex, ez);
       if (len < 1e-4) continue;
-      const m = new THREE.Vector3(ez / len, 0, -ex / len); // normal hacia afuera
+      const m = new THREE.Vector3(ez / len, 0, -ex / len);
       let dt;
       if (!away) {
         const kk = new THREE.Vector3().crossVectors(UP, m);
         const r = P.clone().sub(new THREE.Vector3(a[0], 0, a[1]));
-        dt = new THREE.Vector3().crossVectors(r, F).dot(kk);   // momento sobre la arista
+        dt = new THREE.Vector3().crossVectors(r, F).dot(kk);
       } else dt = m.dot(away);
       if (dt > bestDot) { bestDot = dt; best = { a, b, m }; }
     }
@@ -247,7 +231,7 @@ function planTumble(F, P) {
     const margin = stableMargin(contact(face, q, pos), pos.x, pos.z);
     if (margin > 0.01) {
       lastStable = { n: segs.length, q: q.clone(), pos: pos.clone(), face };
-      if (Math.abs(face.d - REST_D) < 0.003) break;   // cayó en la pose de reposo
+      if (Math.abs(face.d - REST_D) < 0.003) break;
     }
   }
   segs.length = lastStable.n;
@@ -260,18 +244,15 @@ function applySegment(s, phi) {
   body.position.copy(s.p0).add(s.pos0.clone().sub(s.p0).applyQuaternion(R));
 }
 
-// ---------- Armado del jack ----------
 (() => {
   const gA = plateGeometry();
-  // Chapa B: girada 90° en vertical y dada vuelta, con las ranuras encastradas
   const mB = new THREE.Matrix4()
-    .makeTranslation(0, 2 * CROSS * MM, 0)
+    .makeTranslation(0, 2 * K0 * MM, 0)
     .multiply(new THREE.Matrix4().makeRotationZ(Math.PI))
     .multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2));
   const gB = gA.clone().applyMatrix4(mB);
 
   const com = centroid(gA).add(centroid(gB)).multiplyScalar(0.5);
-  // centros de las 4 bochas (y la normal de su cara) en coordenadas del cuerpo
   for (const sx of [-1, 1]) {
     const c = new THREE.Vector3(sx * BALL_X * MM, BALL_Y * MM, 0);
     balls.push({ c: c.clone().sub(com), n: new THREE.Vector3(0, 0, 1) });
@@ -290,14 +271,12 @@ function applySegment(s, phi) {
     const p = g.attributes.position;
     for (let i = 0; i < p.count; i++) pts.push(new THREE.Vector3().fromBufferAttribute(p, i));
   }
-  // un solo objeto por vértice, así las aristas se comparan por identidad
   const seen = new Map();
   for (const v of pts) seen.set(`${v.x.toFixed(5)},${v.y.toFixed(5)},${v.z.toFixed(5)}`, v);
   pts.length = 0;
   pts.push(...seen.values());
   faces = buildHullFaces(pts);
 
-  // Pose inicial: la cara estable con el centro de masa más bajo
   let best = null;
   for (const f of faces) {
     const q = new THREE.Quaternion().setFromUnitVectors(f.n, DOWN);
@@ -312,12 +291,10 @@ function applySegment(s, phi) {
   btn.disabled = false;
 })();
 
-// ---------- Impacto ----------
 const ray = new THREE.Raycaster();
 let lastBall = -1;
 btn.addEventListener('click', () => {
   if (anim || !restFace) return;
-  // el tiro pega en alguna de las bochas que el tirador ve de frente
   const cands = [];
   balls.forEach((bl, idx) => {
     const c = bl.c.clone().applyQuaternion(body.quaternion).add(body.position);
@@ -352,7 +329,6 @@ btn.addEventListener('click', () => {
   anim = { plan, total, t0: now + 90, dur: reduce ? 1 : 520 + total * 260, flashT0: now };
 });
 
-// ---------- Cámara que acompaña ----------
 const followPrev = new THREE.Vector3();
 function follow() {
   const d = new THREE.Vector3(body.position.x - followPrev.x, 0, body.position.z - followPrev.z);
@@ -361,7 +337,6 @@ function follow() {
   camera.position.add(d);
   key.target.position.set(body.position.x, 0, body.position.z);
   key.position.copy(key.target.position).add(KEY_OFF);
-  // la grilla se recicla para que el piso nunca se termine
   grid.position.set(Math.round(body.position.x / 0.5) * 0.5, 0, Math.round(body.position.z / 0.5) * 0.5);
 }
 
@@ -377,7 +352,6 @@ resize();
 let visible = true;
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 }).observe(stage);
 
-// vuelco: arranca lento y se acelera (cae por gravedad), con un pequeño rebote al apoyar
 const easeFall = t => t * t * (3 - 2 * t) * 0.35 + t * t * 0.65;
 let last = performance.now();
 const spin = new THREE.Quaternion();
@@ -410,7 +384,6 @@ renderer.setAnimationLoop(() => {
       anim = null;
     }
   } else if (!dragging && !reduce && restFace) {
-    // gira despacio sobre su apoyo
     spin.setFromAxisAngle(UP, dt * 0.3);
     body.quaternion.premultiply(spin).normalize();
   }
