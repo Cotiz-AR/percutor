@@ -198,7 +198,10 @@ function settle(face, q, pos) {
 
 // Secuencia de vuelcos empujando en la dirección horizontal `away`:
 // vuelca arista por arista hasta caer estable en una pose equivalente a la de reposo
-function planTumble(away) {
+function planTumble(F, P) {
+  // F: dirección del tiro, P: punto del impacto. El primer vuelco va sobre la arista
+  // con mayor momento del impulso; los siguientes siguen rodando hacia el mismo lado.
+  let away = null;
   const segs = [];
   let q = body.quaternion.clone().normalize();
   let pos = body.position.clone();
@@ -214,10 +217,16 @@ function planTumble(away) {
       const len = Math.hypot(ex, ez);
       if (len < 1e-4) continue;
       const m = new THREE.Vector3(ez / len, 0, -ex / len); // normal hacia afuera
-      const dt = m.dot(away);
+      let dt;
+      if (!away) {
+        const kk = new THREE.Vector3().crossVectors(UP, m);
+        const r = P.clone().sub(new THREE.Vector3(a[0], 0, a[1]));
+        dt = new THREE.Vector3().crossVectors(r, F).dot(kk);   // momento sobre la arista
+      } else dt = m.dot(away);
       if (dt > bestDot) { bestDot = dt; best = { a, b, m }; }
     }
     if (!best) break;
+    if (!away) away = best.m.clone();
     const k = new THREE.Vector3().crossVectors(UP, best.m).normalize();
     const p0 = new THREE.Vector3(best.a[0], 0, best.a[1]);
     let next = null, nextAng = Infinity;
@@ -305,28 +314,36 @@ function applySegment(s, phi) {
 
 // ---------- Impacto ----------
 const ray = new THREE.Raycaster();
+let lastBall = -1;
 btn.addEventListener('click', () => {
   if (anim || !restFace) return;
-  // el tiro pega en la bocha visible que mejor mira al tirador
-  let target = null, bestScore = -Infinity;
-  for (const bl of balls) {
+  // el tiro pega en alguna de las bochas que el tirador ve de frente
+  const cands = [];
+  balls.forEach((bl, idx) => {
     const c = bl.c.clone().applyQuaternion(body.quaternion).add(body.position);
     const n = bl.n.clone().applyQuaternion(body.quaternion);
     const toCam = camera.position.clone().sub(c).normalize();
     const facing = Math.abs(n.dot(toCam));
-    // ¿se ve? el rayo desde la cámara tiene que pegar en esa bocha
     ray.set(camera.position, c.clone().sub(camera.position).normalize());
     const h = ray.intersectObject(body, true)[0];
-    const seen = h && h.point.distanceTo(c) < R_BALL * MM * 1.05;
-    const score = facing + (seen ? 1 : -2);
-    if (score > bestScore) { bestScore = score; target = { c, toCam, point: seen ? h.point : c }; }
-  }
+    if (h && h.point.distanceTo(c) < R_BALL * MM * 1.05) cands.push({ idx, c, toCam, point: h.point, facing });
+  });
+  let pool = cands.filter(x => x.facing > 0.3);
+  if (!pool.length) pool = cands;
+  if (pool.length > 1) pool = pool.filter(x => x.idx !== lastBall);
+  const target = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  let P, F;
   if (target) {
-    flash.position.copy(target.point).addScaledVector(target.toCam, 0.06);
+    lastBall = target.idx;
+    P = target.point;
+    F = target.toCam.clone().negate();
+    flash.position.copy(P).addScaledVector(target.toCam, 0.06);
     flash.visible = true;
+  } else {
+    P = body.position.clone();
+    F = body.position.clone().sub(camera.position).normalize();
   }
-  const away = body.position.clone().sub(camera.position).setY(0).normalize();
-  const plan = planTumble(away);
+  const plan = planTumble(F, P);
   if (!plan.segs.length) return;
   hits++;
   hud.textContent = `Impactos: ${hits}`;
